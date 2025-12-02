@@ -14,13 +14,14 @@ class Optimizer:
         if self.interp.seed is None:
             raise RuntimeError("No seed image set")
 
-        x = self.interp.seed
-        optimizer = optim.Adam([x], lr=lr)
+        self.interp.curr_x = self.interp.seed.detach().clone().to(self.interp.device).requires_grad_(True)
+
+        optimizer = optim.Adam([self.interp.curr_x], lr=lr)
 
         for iteration in range(num_iterations):
             optimizer.zero_grad()
 
-            out = self.interp.model.model(x)
+            out = self.interp.model.model(self.interp.curr_x)
             loss = self.interp.loss.get()
 
             loss.backward()
@@ -28,13 +29,13 @@ class Optimizer:
 
             # clamp img to valid range
             with torch.no_grad():
-                x.clamp_(0, 1)
+                self.interp.curr_x.clamp_(0, 1)
 
             # prints
             if iteration % 10 == 0:
                 print(f"Iteration {iteration}: Loss = {loss}")
 
-        self.visualize_result(x)
+        self.visualize_result(self.interp.curr_x)
 
     @staticmethod
     def visualize_result(x):

@@ -9,8 +9,8 @@ def main():
     y.print_layers()
 
     y.set_seed("../images/dog.jpg")
-    y.targets.set_conv0(13)
-    y.optimizer.run(20, 0.1)
+    y.targets.set_conv0(11)
+    y.optimizer.run(10, 0.1)
 
 
 if __name__ == '__main__':

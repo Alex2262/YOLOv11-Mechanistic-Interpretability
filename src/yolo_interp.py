@@ -26,6 +26,7 @@ class YoloInterp:
 
         self.activations = {}
         self.seed = None
+        self.curr_x = None
 
         # Abstracted Managers
         self.targets = TargetManager(self)
