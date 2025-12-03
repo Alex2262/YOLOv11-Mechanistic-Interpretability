@@ -50,4 +50,3 @@ class TargetManager:
         Convenience method for conv layer 1
         """
         self.set_conv_layer(1, channels)
-

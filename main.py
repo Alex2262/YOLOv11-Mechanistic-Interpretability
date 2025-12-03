@@ -8,8 +8,8 @@ def main():
 
     y.print_layers()
 
-    y.set_seed("../images/dog.jpg")
-    y.targets.set_conv0(11)
+    y.set_seed("images/dog.jpg")
+    y.targets.set_conv0(2)
     y.optimizer.run(10, 0.1)
 
 
