@@ -232,7 +232,7 @@ class Auto:
         los = [0] * num_channels
         his = [1000] * num_channels
 
-        orig = test(torch.tensor(his))[1]
+        orig = test(torch.tensor(his, device=self.interp.device))[1]
         best = torch.zeros(num_channels)
 
         mids = [0] * num_channels

@@ -5,7 +5,7 @@ from auto import Auto
 
 
 def main():
-    y = YoloInterp(device="cpu")
+    y = YoloInterp(device="mps")
 
     y.print_layers()
 
