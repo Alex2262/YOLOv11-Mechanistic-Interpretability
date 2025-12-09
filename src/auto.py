@@ -2,11 +2,14 @@
 
 import torch
 
-from loss_computer import LossComputer
+from loss_computer import LossComputer, regularization
+from config import INITIAL_TRANSFORMS
 from transform import Jitter
 from yolo_interp import YoloInterp
 
-from region_maxxing import verify
+from region_maxxing import verify, get_region_loss, REGION
+
+import torch.optim as optim
 
 
 class Auto:
@@ -14,6 +17,13 @@ class Auto:
     def __init__(self, k):
         self.interp = YoloInterp(device="cpu")
         self.k = k
+
+        self.params = {
+            "LAMBDA_BASE": 10,
+            "LAMBDA_DISTANCE": 1
+        }
+
+        self.transforms = list(INITIAL_TRANSFORMS)
 
     def run_phase1(self, layers):
         layer_channel_indices = []
@@ -89,7 +99,7 @@ class Auto:
                 self.interp.model.model(self.interp.seed)
                 orig_activations = self.interp.targets.get()
 
-            x = self.interp.optimizer.run(300, 0.01)
+            x = self.interp.optimizer.run(200, 0.01)
 
             with torch.no_grad():
                 out = self.interp.model.model(x)
@@ -136,6 +146,123 @@ class Auto:
 
         print(best_scale, best_change, orig_change, prop_change)
         return prop_change
+
+    def channel_loss(self, c, inp, out, lambda_bases):
+        targets = self.interp.targets.get()[c]
+
+        activation_loss = -targets.mean()
+        region_loss = get_region_loss(inp, out, c)
+
+        return lambda_bases[c] * activation_loss + region_loss
+
+    def batched_loss(self, b, inp, out, lambda_bases):
+        losses = []
+
+        for c in range(b):
+            losses.append(self.channel_loss(c, inp, out, lambda_bases))
+
+        batched_loss = torch.stack(losses)
+
+        regularization_loss = lambda_bases * regularization(inp)
+
+        mask = torch.ones_like(inp)
+        x1, y1, x2, y2 = REGION
+        mask[:, :, y1:y2 + 1, x1:x2 + 1] = 0
+        distance = torch.linalg.vector_norm((inp - self.interp.seed) * mask, dim=(1, 2, 3))
+
+        distance_loss = self.params["LAMBDA_DISTANCE"] * distance
+
+        batched_loss += regularization_loss + distance_loss
+
+        return batched_loss
+
+    def run_batched(self, b, num_iterations, lr, lambda_bases):
+        self.interp.curr_x = (self.interp.seed.repeat(b, 1, 1, 1)
+                              .detach().clone().to(self.interp.device).requires_grad_(True))
+
+        optimizer = optim.Adam([self.interp.curr_x], lr=lr)
+
+        for iteration in range(num_iterations):
+            optimizer.zero_grad()
+
+            x_transformed = self.interp.curr_x.to(self.interp.device)
+            for transform in self.transforms:
+                x_transformed = transform.apply(x_transformed)
+
+            out = self.interp.model.model(x_transformed)
+            loss = self.batched_loss(b, x_transformed, out, lambda_bases)
+
+            print(loss)
+
+            loss.backward(gradient=torch.ones_like(loss))
+
+            optimizer.step()
+
+            with torch.no_grad():
+                self.interp.curr_x.clamp_(0, 1)
+
+        return self.interp.curr_x
+
+    def bin_layer(self, layer):
+        num_channels = self.interp.layers[layer].conv.weight.shape[0]
+
+        def test(lambda_bases):
+            self.interp.set_seed("images/road.jpg")
+            self.interp.targets.set_conv_layer(layer, None)
+
+            with torch.no_grad():
+                self.interp.model.model(self.interp.seed)
+                orig_activations = self.interp.targets.get()
+
+            x = self.run_batched(num_channels, 200, 0.01, lambda_bases)
+
+            with torch.no_grad():
+                out = self.interp.model.model(x)
+                post_activations = self.interp.targets.get()
+
+            chg = torch.sum(post_activations - orig_activations, dim=(1,2,3))
+
+            ps = []
+            for channel in range(num_channels):
+                ps.append(verify(x, out, channel).item())
+
+            return ps, chg
+
+        eps = 1
+        los = [0] * num_channels
+        his = [1000] * num_channels
+
+        orig = test(torch.tensor(his))[1]
+        best = torch.zeros(num_channels)
+
+        mids = [0] * num_channels
+
+        while True:
+            all_done = True
+
+            for c in range(num_channels):
+                if los[c] + eps < his[c]:
+                    all_done = False
+                    mids[c] = (los[c] + his[c]) / 2
+
+            if all_done:
+                break
+
+            print(los)
+            print(his)
+
+            lb = torch.tensor(mids)
+            p_list, chg_tensor = test(lb)
+
+            for c in range(num_channels):
+                if p_list[c] >= 0.1:
+                    los[c] = mids[c]
+                    best[c] = chg_tensor[c]
+                else:
+                    his[c] = mids[c]
+
+        prop = best / orig
+        print(best, orig, prop)
 
     def search_layer(self, layer):
         num_channels = self.interp.layers[layer].conv.weight.shape[0]

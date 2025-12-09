@@ -5,24 +5,17 @@ from config import *
 from region_maxxing import get_region_loss, REGION
 
 LAMBDA_TV = 30  # 1
-LAMBDA_L2 = 0  # 1
-
-
-def l2_prior(img, center=0.5):
-    return ((img - center) ** 2).mean()
 
 
 def tv_loss(img):
     # ok so (1, 3, H, W)
     dx = img[:, :, :, 1:] - img[:, :, :, :-1]
     dy = img[:, :, 1:, :] - img[:, :, :-1, :]
-    return torch.abs(dx).mean() + torch.abs(dy).mean()
+    return torch.abs(dx).mean(dim=(1, 2, 3)) + torch.abs(dy).mean(dim=(1, 2, 3))
 
 
 def regularization(img):
-    loss = 0.0
-    loss += LAMBDA_TV * tv_loss(img)
-    loss += LAMBDA_L2 * l2_prior(img)
+    loss = LAMBDA_TV * tv_loss(img)
     return loss
 
 
@@ -52,7 +45,7 @@ class LossComputer:
         else:
             activation_loss = -targets.mean()
 
-        reg_loss = regularization(inp)
+        reg_loss = regularization(inp)[0]
 
         return activation_loss + reg_loss
 
@@ -75,7 +68,7 @@ class LossComputer:
         x1, y1, x2, y2 = REGION
         mask[:, :, y1:y2 + 1, x1:x2 + 1] = 0
 
-        regularization_loss = regularization(inp)
+        regularization_loss = regularization(inp)[0]
 
         # distance = torch.norm((inp - self.interp.seed) * mask)
 

@@ -114,7 +114,7 @@ def decode_cell(pred_box, head, grid_x, grid_y):
 LAMBDA_CLASS = 100.0
 
 
-def get_region_loss(inp, out):
+def get_region_loss(inp, out, batch=0):
     # print(inp.size())
 
     _b, _c, h, w = inp.size()
@@ -190,7 +190,7 @@ def get_region_loss(inp, out):
         for grid_y in range(grid_y_min, grid_y_max + 1):
             for grid_x in range(grid_x_min, grid_x_max + 1):
                 flattened_index = offset + grid_y * grid_w + grid_x
-                pred_cell = pred[0, :, flattened_index].to(inp.device)
+                pred_cell = pred[batch, :, flattened_index].to(inp.device)
                 pred_box = pred_cell[0:4]
                 pred_class = pred_cell[4:]
 
@@ -218,7 +218,7 @@ def get_region_loss(inp, out):
     return loss
 
 
-def verify(inp, out):
+def verify(inp, out, batch=0):
     _b, _c, h, w = inp.size()
     pred = out[0]
 
@@ -271,7 +271,7 @@ def verify(inp, out):
         for grid_y in range(grid_y_min, grid_y_max + 1):
             for grid_x in range(grid_x_min, grid_x_max + 1):
                 flattened_index = offset + grid_y * grid_w + grid_x
-                pred_cell = pred[0, :, flattened_index].to(inp.device)
+                pred_cell = pred[batch, :, flattened_index].to(inp.device)
                 pred_box = pred_cell[0:4]
                 pred_class = pred_cell[4:]
 

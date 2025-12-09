@@ -21,7 +21,8 @@ def main():
     # a.auto_layer([17])
     # a.auto_layer([3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15])
 
-    a.bin(5, 27)
+    # a.bin(5, 27)
+    a.bin_layer(5)
 
 
 if __name__ == '__main__':
