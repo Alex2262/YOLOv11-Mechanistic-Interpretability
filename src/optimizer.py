@@ -33,9 +33,10 @@ class Optimizer:
 
         optimizer = optim.Adam([self.interp.curr_x], lr=lr)
 
-        with torch.no_grad():
-            self.interp.model.model(self.interp.curr_x)
-            orig_activations = self.interp.targets.get()
+        if self.interp.targets.get is not None:
+            with torch.no_grad():
+                self.interp.model.model(self.interp.curr_x)
+                orig_activations = self.interp.targets.get()
 
         for iteration in range(num_iterations):
             optimizer.zero_grad()
@@ -60,13 +61,14 @@ class Optimizer:
             if printing and iteration % 20 == 0:
                 print(f"Iteration {iteration}: Loss = {loss}")
 
-        with torch.no_grad():
-            self.interp.model.model(self.interp.curr_x)
-            post_activations = self.interp.targets.get()
+        if self.interp.targets.get is not None:
+            with torch.no_grad():
+                self.interp.model.model(self.interp.curr_x)
+                post_activations = self.interp.targets.get()
 
-        if printing:
-            change = torch.sum(post_activations - orig_activations)
-            print("Change in activations:", change)
+            if printing:
+                change = torch.sum(post_activations - orig_activations)
+                print("Change in activations:", change)
 
         if show:
             visualize_result_w_bbs(self.interp.model, self.interp.curr_x)

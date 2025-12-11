@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from config import *
 from region_maxxing import get_region_loss, REGION
 
-LAMBDA_TV = 200  # 1
+LAMBDA_TV = 20  # 1
 
 
 def tv_loss(img):
@@ -24,7 +24,7 @@ class LossComputer:
         self.interp = interp
         # self.get = self.get_seeded if USE_SEED else self.get_basic
         # self.get = self.get_basic # self.get_region_and_layer
-        self.get = self.get_basic # self.get_region_and_layer
+        self.get = self.get_basic
 
     def get_basic(self, inp, out, params):
         if self.interp.targets.get is None:

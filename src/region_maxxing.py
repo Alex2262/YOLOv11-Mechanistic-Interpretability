@@ -12,7 +12,8 @@ import torch
 
 
 STRIDES = [8, 16, 32]
-REGION = [0, 0, 127, 127]
+# REGION = [0, 0, 127, 127]
+REGION = [34, 34, 94, 94]
 
 # REGION = [10, 10, 200, 200]
 USE_HEAD = None
