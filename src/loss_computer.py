@@ -1,10 +1,6 @@
 
-import math
-import torch.nn.functional as F
 from config import *
-from region_maxxing import get_region_loss, REGION
-
-LAMBDA_TV = 20  # 1
+from region_maxxing import get_region_loss
 
 
 def tv_loss(img):
@@ -14,8 +10,8 @@ def tv_loss(img):
     return torch.abs(dx).mean(dim=(1, 2, 3)) + torch.abs(dy).mean(dim=(1, 2, 3))
 
 
-def regularization(img):
-    loss = LAMBDA_TV * tv_loss(img)
+def regularization(img, params):
+    loss = params["LAMBDA_TV"] * tv_loss(img)
     return loss
 
 
@@ -45,7 +41,7 @@ class LossComputer:
         else:
             activation_loss = -targets.mean()
 
-        reg_loss = regularization(inp)[0]
+        reg_loss = regularization(inp, params)[0]
 
         return params["LAMBDA_BASE"] * (activation_loss + reg_loss)
 
@@ -62,30 +58,25 @@ class LossComputer:
 
     def get_region(self, inp, out, params):
 
-        region_loss = get_region_loss(inp, out)
+        region_loss = get_region_loss(inp, out, params)
 
-        mask = torch.ones_like(inp)
-        x1, y1, x2, y2 = REGION
-        mask[:, :, y1:y2 + 1, x1:x2 + 1] = 0
+        mask = torch.ones_like(inp) * params["LAMBDA_DISTANCE_OUTER"]
+        x1, y1, x2, y2 = params["REGION"]
+        mask[:, :, y1:y2 + 1, x1:x2 + 1] = params["LAMBDA_DISTANCE_INNER"]
 
-        regularization_loss = regularization(inp)[0]
+        regularization_loss = regularization(inp, params)[0]
 
-        # distance = torch.norm((inp - self.interp.seed) * mask)
+        distance = torch.norm((inp - self.interp.seed) * mask)
 
-        if USE_SEED:
-            distance = torch.norm((inp - self.interp.seed) * mask)
-        else:
-            distance = 0
-
-        return region_loss + regularization_loss + 10 * distance
+        return region_loss + regularization_loss + distance
 
     def get_region_and_layer(self, inp, out, params):
-        region_loss = get_region_loss(inp, out)
+        region_loss = get_region_loss(inp, out, params)
         base_loss = self.get_basic(inp, out, params)
 
         if USE_SEED:
             mask = torch.ones_like(inp)
-            x1, y1, x2, y2 = REGION
+            x1, y1, x2, y2 = params["REGION"]
             mask[:, :, y1:y2 + 1, x1:x2 + 1] = 0.001
             distance = torch.norm((inp - self.interp.seed) * mask)
         else:

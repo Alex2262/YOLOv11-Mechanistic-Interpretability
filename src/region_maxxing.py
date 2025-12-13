@@ -12,12 +12,7 @@ import torch
 
 
 STRIDES = [8, 16, 32]
-# REGION = [0, 0, 127, 127]
-REGION = [34, 34, 94, 94]
-
-# REGION = [10, 10, 200, 200]
 USE_HEAD = None
-CLASS_ID = 0
 
 
 def IoU(tx1, ty1, tx2, ty2, px1, py1, px2, py2):
@@ -116,7 +111,7 @@ def decode_cell(pred_box, head, grid_x, grid_y):
 LAMBDA_CLASS = 100.0
 
 
-def get_region_loss(inp, out, batch=0):
+def get_region_loss(inp, out, params, batch=0):
     # print(inp.size())
 
     _b, _c, h, w = inp.size()
@@ -124,12 +119,12 @@ def get_region_loss(inp, out, batch=0):
     # print(len(out[1]), out[1][0].shape, out[1][1].shape, out[1][2].shape)
     pred = out[0]
 
-    x1, y1, x2, y2 = REGION
+    x1, y1, x2, y2 = params["REGION"]
 
-    tx1 = torch.tensor(REGION[0], dtype=torch.float32, device=pred.device)
-    ty1 = torch.tensor(REGION[1], dtype=torch.float32, device=pred.device)
-    tx2 = torch.tensor(REGION[2], dtype=torch.float32, device=pred.device)
-    ty2 = torch.tensor(REGION[3], dtype=torch.float32, device=pred.device)
+    tx1 = torch.tensor(params["REGION"][0], dtype=torch.float32, device=pred.device)
+    ty1 = torch.tensor(params["REGION"][1], dtype=torch.float32, device=pred.device)
+    tx2 = torch.tensor(params["REGION"][2], dtype=torch.float32, device=pred.device)
+    ty2 = torch.tensor(params["REGION"][3], dtype=torch.float32, device=pred.device)
 
     assert (h % 32 == 0 and w % 32 == 0)
     assert (0 <= x1 < x2 < w and 0 <= y1 < y2 < h)
@@ -158,12 +153,12 @@ def get_region_loss(inp, out, batch=0):
         if rs < 32:
             heads = [0]
         elif rs < 128:
-            if CLASS_ID is None:
+            if params["CLASS_ID"] is None:
                 heads = [0, 1]
             else:
                 heads = [1]
         else:
-            if CLASS_ID is None:
+            if params["CLASS_ID"] is None:
                 heads = [0, 1, 2]
             else:
                 heads = [2]
@@ -205,7 +200,7 @@ def get_region_loss(inp, out, batch=0):
                 # print(sum(pred_class))
                 # print(max(pred_class), min(pred_class))
 
-                if CLASS_ID is None:
+                if params["CLASS_ID"] is None:
                     class_loss = torch.sum(pred_class)
                     box_loss = 0
                 else:
@@ -214,7 +209,7 @@ def get_region_loss(inp, out, batch=0):
                     # we can do box loss with 1 - GIoU
                     giou = GIoU(tx1, ty1, tx2, ty2, px1, py1, px2, py2)
                     box_loss = 0 # 1 - giou
-                    target_class = torch.tensor(CLASS_ID, dtype=torch.long, device=pred.device)
+                    target_class = torch.tensor(params["CLASS_ID"], dtype=torch.long, device=pred.device)
                     # print(pred_class.sum(), pred_class.max(), pred_class.min())
 
                     class_loss = torch.nn.functional.cross_entropy(
@@ -227,11 +222,11 @@ def get_region_loss(inp, out, batch=0):
     return loss
 
 
-def verify(inp, out, batch=0):
+def verify(inp, out, params, batch=0):
     _b, _c, h, w = inp.size()
     pred = out[0]
 
-    x1, y1, x2, y2 = REGION
+    x1, y1, x2, y2 = params["REGION"]
 
     assert (h % 32 == 0 and w % 32 == 0)
     assert (0 <= x1 < x2 < w and 0 <= y1 < y2 < h)
@@ -251,12 +246,12 @@ def verify(inp, out, batch=0):
     if rs < 32:
         heads = [0]
     elif rs < 128:
-        if CLASS_ID is None:
+        if params["CLASS_ID"] is None:
             heads = [0, 1]
         else:
             heads = [1]
     else:
-        if CLASS_ID is None:
+        if params["CLASS_ID"] is None:
             heads = [0, 1, 2]
         else:
             heads = [2]
@@ -284,7 +279,7 @@ def verify(inp, out, batch=0):
                 pred_box = pred_cell[0:4]
                 pred_class = pred_cell[4:]
 
-                prob_s += pred_class[CLASS_ID]
+                prob_s += pred_class[params["CLASS_ID"]]
                 prob_cnt += 1
 
     return prob_s / prob_cnt

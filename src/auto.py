@@ -7,7 +7,7 @@ from config import INITIAL_TRANSFORMS
 from visual_helpers import visualize_result_w_bbs
 from yolo_interp import YoloInterp
 
-from region_maxxing import verify, get_region_loss, REGION
+from region_maxxing import verify, get_region_loss
 from multiprocessing import Pool, cpu_count
 
 import torch.optim as optim
@@ -185,7 +185,7 @@ class Auto:
         regularization_loss = lambda_bases * regularization(inp)
 
         mask = torch.ones_like(inp)
-        x1, y1, x2, y2 = REGION
+        x1, y1, x2, y2 = self.interp.optimizer.params["REGION"]
         mask[:, :, y1:y2 + 1, x1:x2 + 1] = 0
         distance = torch.linalg.vector_norm((inp - self.interp.seed) * mask, dim=(1, 2, 3))
 

@@ -2,13 +2,11 @@
 import torch
 from abc import ABC, abstractmethod
 
-from region_maxxing import REGION
-
 
 class Transform(ABC):
 
     @abstractmethod
-    def apply(self, x):
+    def apply(self, x, params):
         pass
 
 
@@ -18,7 +16,7 @@ class Jitter(Transform):
         self.shift_y = None
         self.shift_x = None
 
-    def apply(self, x):
+    def apply(self, x, params):
         self.shift_y = torch.randint(-self.amount, self.amount + 1, (1,)).item()
         self.shift_x = torch.randint(-self.amount, self.amount + 1, (1,)).item()
 
@@ -32,11 +30,11 @@ class RegionJitter(Transform):
         self.shift_y = None
         self.shift_x = None
 
-    def apply(self, x):
+    def apply(self, x, params):
         self.shift_y = torch.randint(-self.amount, self.amount + 1, (1,)).item()
         self.shift_x = torch.randint(-self.amount, self.amount + 1, (1,)).item()
 
-        x1, y1, x2, y2 = REGION
+        x1, y1, x2, y2 = params["REGION"]
 
         out = x.clone()
 

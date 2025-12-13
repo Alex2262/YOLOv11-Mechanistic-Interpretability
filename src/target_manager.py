@@ -5,8 +5,6 @@
 # doesn't need layer specifics and everything else can be abstracted
 #
 
-from region_maxxing import REGION
-
 
 class TargetManager:
     def __init__(self, interp):

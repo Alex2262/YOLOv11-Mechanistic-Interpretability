@@ -31,7 +31,7 @@ class YoloInterp:
         self.seed = None
         self.curr_x = None
 
-        self.img_shape = (128, 128)
+        self.img_shape = (256, 256)
 
         # Abstracted Managers
         self.targets = TargetManager(self)
@@ -56,12 +56,15 @@ class YoloInterp:
         print(self.model.model.stride)
         # visualize_layer_filters(self.layers[5].conv.weight.data.clone())
 
+    def set_seed_tensor(self, tensor):
+        self.seed = tensor.clone().detach().requires_grad_(True).to(self.device)
+
     def set_seed(self, path):
         image = Image.open(path)
         transform = T.Compose([T.Resize((224, 224)), T.ToTensor()])
         t = transform(image).unsqueeze(dim=0).to(self.device)
 
-        self.seed = t.clone().detach().requires_grad_(True).to(self.device)
+        self.set_seed_tensor(t)
 
     def compare_activations(self, images):
         for image_path in images:

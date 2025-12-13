@@ -6,7 +6,7 @@ INIT_RANDOM = True
 USE_SEED = False
 
 INITIAL_TRANSFORMS = [
-    Jitter(20)
+    RegionJitter(10)
 ]
 
 

@@ -16,8 +16,10 @@ def main():
     # y.targets.set_conv_layer(5, [27])
     # y.optimizer.run(200, 0.01, True, True)
 
+    y.targets.set_conv_layer(20, 56)
+
     # y.targets.set_conv_layer(20, [89, 4, 107, 91, 77])
-    y.targets.set_conv_layer(17, [18, 16, 2, 1, 24, 13, 9, 0, 12, 23])
+    # y.targets.set_conv_layer(17, [18, 16, 2, 1, 24, 13, 9, 0, 12, 23])
 
     # y.compare_activations(["images/coats_in_rain.jpg", "images/in_snow.jpg", "images/stock_two_ppl.jpg", "images/dog.jpg", "images/road.jpg"])
 
