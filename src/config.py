@@ -2,11 +2,11 @@
 from transform import *
 
 
-INIT_RANDOM = False
-USE_SEED = True
+INIT_RANDOM = True
+USE_SEED = False
 
-TRANSFORMS = [
-    Jitter(4)
+INITIAL_TRANSFORMS = [
+    RegionJitter(10)
 ]
 
 
