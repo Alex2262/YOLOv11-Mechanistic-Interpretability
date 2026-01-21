@@ -1,4 +1,5 @@
 
 A mechanistic interpretability project exploring how YOLOv11 internally works through pixel-space optimization.
 
-<img width="810" height="1210" alt="Screenshot 2026-01-20 at 9 26 23 PM" src="https://github.com/user-attachments/assets/91b3a509-84eb-43ea-8d5b-b451cb288058" />
+
+![MLAB Yolo Presentation_page-0001](https://github.com/user-attachments/assets/f0315a29-cd9f-4529-8e40-c24b894b8616)
